@@ -151,6 +151,79 @@ for (let r = 0; r < this.boardSize; r++) {
 
 ---
 
+---
+
+## Bug #5: Miss Indicators Not Displaying
+
+**Severity:** High  
+**Status:** Fixed
+
+### Description
+When either the human player or AI attacked a square and the attack resulted in a MISS, the board did not visibly show the miss. Players could not see which squares had been attacked and missed.
+
+### Reproduction Steps
+1. Start a game
+2. Click on an enemy square that does not contain a ship
+3. Observe that no visual indicator appears on that square
+4. Let the AI attack a square that does not contain a ship
+5. Observe that no visual indicator appears on the player's board
+
+### Root Cause
+In the `renderBoard()` method (lines 54-66), the conditional logic was incorrect:
+
+```javascript
+const cellValue = board[row][col];
+if (cellValue) {  // This is truthy for the string 'miss'
+    if (cellValue.hit) {
+        cell.classList.add('hit');
+        // ...
+    } else if (isPlayerBoard && cellValue.ship) {
+        cell.classList.add('ship');
+    }
+} else if (cellValue === 'miss') {  // This was unreachable
+    cell.classList.add('miss');
+}
+```
+
+The bug occurred because:
+1. When a cell contains the string `'miss'`, `cellValue` is truthy (non-empty strings are truthy in JavaScript)
+2. The first condition `if (cellValue)` evaluates to true
+3. The code then checks `if (cellValue.hit)` which is false (strings don't have a .hit property)
+4. Then checks `else if (isPlayerBoard && cellValue.ship)` which is also false
+5. The miss check in the `else if` block is never reached because it's after the truthy check
+
+### Fix
+Reordered the conditional logic to check for 'miss' first:
+
+```javascript
+const cellValue = board[row][col];
+if (cellValue === 'miss') {
+    cell.classList.add('miss');
+} else if (cellValue) {
+    if (cellValue.hit) {
+        cell.classList.add('hit');
+        if (cellValue.sunk) {
+            cell.classList.add('sunk');
+        }
+    } else if (isPlayerBoard && cellValue.ship) {
+        cell.classList.add('ship');
+    }
+}
+```
+
+### Testing
+- Started a new game and intentionally missed several shots as player
+- Verified that every miss now displays a red X on the enemy board
+- Let AI miss several shots
+- Verified that every AI miss displays a red X on the player's board
+- Confirmed that hit indicators still work correctly
+- Confirmed that ship display still works correctly
+
+### Additional Enhancement
+Also increased the miss indicator font size from 1.3rem to 2rem and made it bold for better visibility.
+
+---
+
 ## Testing Summary
 
 ### Unit Tests Created

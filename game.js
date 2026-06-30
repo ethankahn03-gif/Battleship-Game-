@@ -52,7 +52,9 @@ class BattleshipGame {
                 cell.dataset.board = isPlayerBoard ? 'player' : 'enemy';
                 
                 const cellValue = board[row][col];
-                if (cellValue) {
+                if (cellValue === 'miss') {
+                    cell.classList.add('miss');
+                } else if (cellValue) {
                     if (cellValue.hit) {
                         cell.classList.add('hit');
                         if (cellValue.sunk) {
@@ -61,8 +63,6 @@ class BattleshipGame {
                     } else if (isPlayerBoard && cellValue.ship) {
                         cell.classList.add('ship');
                     }
-                } else if (cellValue === 'miss') {
-                    cell.classList.add('miss');
                 }
                 
                 boardElement.appendChild(cell);

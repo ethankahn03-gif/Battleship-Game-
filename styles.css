@@ -213,7 +213,8 @@ h1 {
 .cell.miss::after {
     content: '❌';
     color: #d32f2f;
-    font-size: 1.3rem;
+    font-size: 2rem;
+    font-weight: bold;
 }
 
 .cell.miss:hover {
