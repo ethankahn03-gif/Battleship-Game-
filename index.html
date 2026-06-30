@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship - Play Against AI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚓ Battleship</h1>
+            <p class="subtitle">Sink the enemy fleet before they sink yours!</p>
+        </header>
+
+        <div class="game-info">
+            <div class="status-panel">
+                <h2 id="game-status">Place Your Ships</h2>
+                <p id="game-message">Click to place ships. Press 'R' to rotate.</p>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Your Ships:</span>
+                    <span id="player-ships">5</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Enemy Ships:</span>
+                    <span id="enemy-ships">5</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ship-placement" id="ship-placement">
+            <h3>Ships to Place:</h3>
+            <div class="ships-list">
+                <div class="ship-item" data-ship="carrier">
+                    <span class="ship-icon">🚢</span>
+                    <span>Carrier (5)</span>
+                </div>
+                <div class="ship-item" data-ship="battleship">
+                    <span class="ship-icon">⛴️</span>
+                    <span>Battleship (4)</span>
+                </div>
+                <div class="ship-item" data-ship="cruiser">
+                    <span class="ship-icon">🛳️</span>
+                    <span>Cruiser (3)</span>
+                </div>
+                <div class="ship-item" data-ship="submarine">
+                    <span class="ship-icon">🚤</span>
+                    <span>Submarine (3)</span>
+                </div>
+                <div class="ship-item" data-ship="destroyer">
+                    <span class="ship-icon">⛵</span>
+                    <span>Destroyer (2)</span>
+                </div>
+            </div>
+            <div class="placement-controls">
+                <button id="rotate-ship" class="btn btn-secondary">
+                    <span id="orientation-icon">↔️</span>
+                    <span id="orientation-text">Horizontal</span>
+                </button>
+                <button id="random-placement" class="btn btn-secondary">Random Placement</button>
+            </div>
+        </div>
+
+        <div class="boards-container">
+            <div class="board-wrapper">
+                <h3>Your Fleet</h3>
+                <div class="board" id="player-board"></div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Enemy Waters</h3>
+                <div class="board" id="enemy-board"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="start-game" class="btn btn-primary" disabled>Start Game</button>
+            <button id="reset-game" class="btn btn-secondary">New Game</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
