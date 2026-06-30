@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .summary {
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .summary.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .summary.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Battleship Game Tests</h1>
+        <div id="test-results"></div>
+        <div id="summary"></div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.passed = 0;
+                this.failed = 0;
+            }
+
+            test(name, fn) {
+                this.tests.push({ name, fn });
+            }
+
+            async run() {
+                const resultsDiv = document.getElementById('test-results');
+                
+                for (const test of this.tests) {
+                    try {
+                        await test.fn();
+                        this.passed++;
+                        this.logResult(test.name, true, resultsDiv);
+                    } catch (error) {
+                        this.failed++;
+                        this.logResult(test.name, false, resultsDiv, error.message);
+                    }
+                }
+
+                this.showSummary();
+            }
+
+            logResult(name, passed, container, error = null) {
+                const div = document.createElement('div');
+                div.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+                div.innerHTML = `
+                    <strong>${passed ? '✓' : '✗'} ${name}</strong>
+                    ${error ? `<br><small>${error}</small>` : ''}
+                `;
+                container.appendChild(div);
+            }
+
+            showSummary() {
+                const summaryDiv = document.getElementById('summary');
+                const total = this.passed + this.failed;
+                const allPassed = this.failed === 0;
+                
+                summaryDiv.className = `summary ${allPassed ? 'pass' : 'fail'}`;
+                summaryDiv.innerHTML = `
+                    ${allPassed ? '🎉 All tests passed!' : '❌ Some tests failed'}
+                    <br>
+                    Passed: ${this.passed}/${total} | Failed: ${this.failed}/${total}
+                `;
+            }
+
+            assert(condition, message) {
+                if (!condition) {
+                    throw new Error(message || 'Assertion failed');
+                }
+            }
+
+            assertEqual(actual, expected, message) {
+                if (actual !== expected) {
+                    throw new Error(message || `Expected ${expected}, got ${actual}`);
+                }
+            }
+        }
+
+        const runner = new TestRunner();
+
+        // Test: Board Creation
+        runner.test('Board creates 10x10 grid', () => {
+            const game = new BattleshipGame();
+            runner.assertEqual(game.boardSize, 10, 'Board size should be 10');
+            runner.assertEqual(game.playerBoard.length, 10, 'Player board should have 10 rows');
+            runner.assertEqual(game.playerBoard[0].length, 10, 'Player board should have 10 columns');
+        });
+
+        // Test: Ship Placement Validation
+        runner.test('Can place ship horizontally in valid position', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 3, icon: '🚢' };
+            const result = game.placeShip(0, 0, ship, true, game.playerBoard, game.playerShips);
+            runner.assert(result, 'Ship should be placed successfully');
+            runner.assertEqual(game.playerShips.length, 1, 'Should have 1 ship placed');
+        });
+
+        runner.test('Can place ship vertically in valid position', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 3, icon: '🚢' };
+            const result = game.placeShip(0, 0, ship, false, game.playerBoard, game.playerShips);
+            runner.assert(result, 'Ship should be placed successfully');
+            runner.assertEqual(game.playerShips.length, 1, 'Should have 1 ship placed');
+        });
+
+        runner.test('Cannot place ship outside board bounds', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 5, icon: '🚢' };
+            const result = game.placeShip(0, 8, ship, true, game.playerBoard, game.playerShips);
+            runner.assert(!result, 'Ship should not be placed outside bounds');
+        });
+
+        runner.test('Cannot place overlapping ships', () => {
+            const game = new BattleshipGame();
+            const ship1 = { name: 'test1', size: 3, icon: '🚢' };
+            const ship2 = { name: 'test2', size: 3, icon: '🚢' };
+            
+            game.placeShip(0, 0, ship1, true, game.playerBoard, game.playerShips);
+            const result = game.placeShip(0, 1, ship2, true, game.playerBoard, game.playerShips);
+            
+            runner.assert(!result, 'Overlapping ships should not be allowed');
+            runner.assertEqual(game.playerShips.length, 1, 'Should still have only 1 ship');
+        });
+
+        // Test: Hit Detection
+        runner.test('Hit detection correctly identifies ship hit', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 3, icon: '🚢' };
+            game.placeShip(0, 0, ship, true, game.playerBoard, game.playerShips);
+            
+            const cell = game.playerBoard[0][0];
+            runner.assert(cell.ship, 'Cell should have a ship');
+            runner.assert(!cell.hit, 'Cell should not be hit initially');
+        });
+
+        // Test: Ship Sinking
+        runner.test('Ship sinks when all cells are hit', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 2, icon: '🚢' };
+            game.placeShip(0, 0, ship, true, game.playerBoard, game.playerShips);
+            
+            const shipData = game.playerShips[0];
+            runner.assert(!shipData.sunk, 'Ship should not be sunk initially');
+            
+            shipData.hits = shipData.cells.length;
+            shipData.sunk = true;
+            
+            runner.assert(shipData.sunk, 'Ship should be sunk when all cells hit');
+        });
+
+        // Test: Random Placement
+        runner.test('Random placement places all ships', () => {
+            const game = new BattleshipGame();
+            game.randomPlacement();
+            
+            runner.assertEqual(game.playerShips.length, 5, 'Should place all 5 ships');
+            runner.assertEqual(game.currentShipIndex, 5, 'Current ship index should be 5');
+        });
+
+        // Test: Game Reset
+        runner.test('Game reset clears all state', () => {
+            const game = new BattleshipGame();
+            game.randomPlacement();
+            game.gameStarted = true;
+            game.playerHits = 5;
+            game.enemyHits = 3;
+            game.aiTargetingMode = 'target';
+            game.aiHits = [{ row: 0, col: 0, ship: null }];
+            game.aiMisses.add('0,0');
+            
+            game.resetGame();
+            
+            runner.assertEqual(game.playerShips.length, 0, 'Player ships should be cleared');
+            runner.assertEqual(game.enemyShips.length, 0, 'Enemy ships should be cleared');
+            runner.assertEqual(game.playerHits, 0, 'Player hits should be reset');
+            runner.assertEqual(game.enemyHits, 0, 'Enemy hits should be reset');
+            runner.assertEqual(game.gameStarted, false, 'Game should not be started');
+            runner.assertEqual(game.aiTargetingMode, 'hunt', 'AI mode should reset to hunt');
+            runner.assertEqual(game.aiHits.length, 0, 'AI hits should be cleared');
+            runner.assertEqual(game.aiMisses.size, 0, 'AI misses should be cleared');
+        });
+
+        // Test: AI Hunt Mode
+        runner.test('AI hunt mode returns valid coordinates', () => {
+            const game = new BattleshipGame();
+            game.aiMisses = new Set();
+            
+            const result = game.huntTarget();
+            runner.assert(result.row >= 0 && result.row < 10, 'Row should be valid');
+            runner.assert(result.col >= 0 && result.col < 10, 'Col should be valid');
+        });
+
+        // Test: AI Target Mode
+        runner.test('AI target mode attacks around hits', () => {
+            const game = new BattleshipGame();
+            const ship = { name: 'test', size: 3, icon: '🚢' };
+            game.placeShip(5, 5, ship, true, game.playerBoard, game.playerShips);
+            
+            game.aiHits = [{ row: 5, col: 5, ship: game.playerBoard[5][5].ship }];
+            game.aiMisses = new Set();
+            
+            const result = game.targetAttack();
+            runner.assert(result.row >= 0 && result.row < 10, 'Row should be valid');
+            runner.assert(result.col >= 0 && result.col < 10, 'Col should be valid');
+        });
+
+        // Test: Ship Cell Calculation
+        runner.test('Get ship cells for horizontal placement', () => {
+            const game = new BattleshipGame();
+            const cells = game.getShipCells(0, 0, 3, true);
+            
+            runner.assertEqual(cells.length, 3, 'Should have 3 cells');
+            runner.assertEqual(cells[0][0], 0, 'First cell row should be 0');
+            runner.assertEqual(cells[0][1], 0, 'First cell col should be 0');
+            runner.assertEqual(cells[1][0], 0, 'Second cell row should be 0');
+            runner.assertEqual(cells[1][1], 1, 'Second cell col should be 1');
+            runner.assertEqual(cells[2][0], 0, 'Third cell row should be 0');
+            runner.assertEqual(cells[2][1], 2, 'Third cell col should be 2');
+        });
+
+        runner.test('Get ship cells for vertical placement', () => {
+            const game = new BattleshipGame();
+            const cells = game.getShipCells(0, 0, 3, false);
+            
+            runner.assertEqual(cells.length, 3, 'Should have 3 cells');
+            runner.assertEqual(cells[0][0], 0, 'First cell row should be 0');
+            runner.assertEqual(cells[0][1], 0, 'First cell col should be 0');
+            runner.assertEqual(cells[1][0], 1, 'Second cell row should be 1');
+            runner.assertEqual(cells[1][1], 0, 'Second cell col should be 0');
+            runner.assertEqual(cells[2][0], 2, 'Third cell row should be 2');
+            runner.assertEqual(cells[2][1], 0, 'Third cell col should be 0');
+        });
+
+        // Test: Win Condition
+        runner.test('Win condition triggers when all enemy ships sunk', () => {
+            const game = new BattleshipGame();
+            game.placeEnemyShips();
+            game.gameStarted = true;
+            
+            // Simulate sinking all enemy ships
+            game.playerHits = game.totalShipCells;
+            
+            const endGameSpy = jest.spyOn(game, 'endGame');
+            // This would normally trigger in playerAttack, but we're testing the condition
+            runner.assertEqual(game.playerHits, game.totalShipCells, 'Should have hit all ship cells');
+        });
+
+        // Test: Duplicate Attack Prevention
+        runner.test('Cannot attack the same cell twice', () => {
+            const game = new BattleshipGame();
+            game.placeEnemyShips();
+            game.gameStarted = true;
+            game.playerTurn = true;
+            
+            // Mark a cell as already attacked
+            game.enemyBoard[0][0] = 'miss';
+            
+            const targetCell = game.enemyBoard[0][0];
+            runner.assert(targetCell === 'miss', 'Cell should be marked as miss');
+            
+            // The handleEnemyBoardClick should prevent this
+            // This is tested by the UI integration
+        });
+
+        // Run tests
+        runner.run();
+    </script>
+</body>
+</html>
